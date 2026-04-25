@@ -120,13 +120,14 @@ function enviar(i) {
   barra.style.background = "orange";
   status.innerText = "⏳ Enviando...";
 
+  const formData = new FormData();
+  formData.append("usuario", dados.usuario);
+  formData.append("vencimento", dados.vencimento);
+
   fetch(API_URL, {
     method: "POST",
-    mode: "no-cors", // 🔥 resolve CORS
-    headers: {
-      "Content-Type": "text/plain"
-    },
-    body: JSON.stringify([dados])
+    mode: "no-cors",
+    body: formData
   })
   .then(() => {
     barra.style.width = "100%";
@@ -142,7 +143,6 @@ function enviar(i) {
     status.style.color = "red";
   });
 }
-
 // salvar local
 function salvarLocal(i, texto) {
   localStorage.setItem("box" + i, texto);
