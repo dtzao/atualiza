@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Painel de Renovações</title>
+
+<style>
+body {
+  font-family: Arial;
+  background: #f0f0f0;
+  padding: 10px;
+}
+
+.box {
+  background: white;
+  padding: 10px;
+  margin-bottom: 15px;
+  border-radius: 10px;
+}
+
+textarea {
+  width: 100%;
+  height: 120px;
+  padding: 8px;
+}
+
+button {
+  width: 48%;
+  padding: 10px;
+  margin-top: 5px;
+}
+
+.status {
+  margin-top: 5px;
+  font-size: 14px;
+}
+
+.progress {
+  height: 6px;
+  background: #ddd;
+  margin-top: 5px;
+}
+
+.bar {
+  height: 6px;
+  width: 0%;
+  background: gray;
+}
+</style>
+</head>
+
+<body>
+
+<h3>Painel de Atualização</h3>
+
+<div id="container"></div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbz9_bqSoEo-j5lpKcohMhtkQdDxJiehoFZlprPt3DqkOuxHGKaBttmVWyE6Ic3T6Sd-/exec";
+
+const container = document.getElementById("container");
+
+// cria 10 caixas
+for (let i = 0; i < 10; i++) {
+  container.innerHTML += `
+    <div class="box">
+      <textarea id="txt${i}" placeholder="Cole o texto aqui..."></textarea>
+
+      <div style="display:flex; justify-content:space-between;">
+        <button onclick="enviar(${i})">Enviar</button>
+        <button onclick="limpar(${i})">Limpar</button>
+      </div>
+
+      <div class="progress">
+        <div class="bar" id="bar${i}"></div>
+      </div>
+
+      <div class="status" id="status${i}"></div>
+    </div>
+  `;
+}
+
+// extrair dados automaticamente
+function extrair(texto) {
+  const usuarioMatch = texto.match(/Usuário:\s*(.*)/i);
+  const dataMatch = texto.match(/Próximo vencimento:\s*(.*)/i);
+
+  if (!usuarioMatch || !dataMatch) return null;
+
+  let usuario = usuarioMatch[1].trim();
+  let vencimento = dataMatch[1].trim().split(" ")[0];
+
+  return { usuario, vencimento };
+}
+
+// enviar individual
+function enviar(i) {
+  const texto = document.getElementById(`txt${i}`).value;
+  const status = document.getElementById(`status${i}`);
+  const barra = document.getElementById(`bar${i}`);
+
+  if (!texto) {
+    alert("Cole o texto");
+    return;
+  }
+
+  const dados = extrair(texto);
+
+  if (!dados) {
+    status.innerText = "❌ Formato inválido";
+    status.style.color = "red";
+    return;
+  }
+
+  barra.style.width = "40%";
+  barra.style.background = "orange";
+  status.innerText = "Enviando...";
+
+  fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify([dados])
+  })
+  .then(res => res.json())
+  .then(resp => {
+    barra.style.width = "100%";
+
+    if (resp.status === "atualizado") {
+      barra.style.background = "green";
+      status.innerText = "✅ Enviado e atualizado!";
+      status.style.color = "green";
+      salvarLocal(i, texto);
+    } else {
+      barra.style.background = "red";
+      status.innerText = "❌ " + resp.mensagem;
+      status.style.color = "red";
+    }
+  })
+  .catch(() => {
+    barra.style.background = "red";
+    status.innerText = "❌ Erro de conexão";
+    status.style.color = "red";
+  });
+}
+
+// salvar local
+function salvarLocal(i, texto) {
+  localStorage.setItem("box" + i, texto);
+}
+
+// limpar individual
+function limpar(i) {
+  localStorage.removeItem("box" + i);
+  document.getElementById(`txt${i}`).value = "";
+  document.getElementById(`bar${i}`).style.width = "0%";
+  document.getElementById(`status${i}`).innerText = "";
+}
+
+// carregar salvos
+window.onload = () => {
+  for (let i = 0; i < 10; i++) {
+    let salvo = localStorage.getItem("box" + i);
+    if (salvo) {
+      document.getElementById(`txt${i}`).value = salvo;
+    }
+  }
+}
+</script>
+
+</body>
+</html>
