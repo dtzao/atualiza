@@ -125,24 +125,20 @@ function enviar(i) {
   formData.append("vencimento", dados.vencimento);
 
   fetch(API_URL, {
-    method: "POST",
-    mode: "no-cors",
-    body: formData
-  })
-  .then(() => {
-    barra.style.width = "100%";
-    barra.style.background = "green";
-    status.innerText = "✅ Enviado!";
-    status.style.color = "green";
-    salvarLocal(i, texto);
-  })
-  .catch(() => {
-    barra.style.width = "100%";
-    barra.style.background = "red";
-    status.innerText = "❌ Erro de conexão";
-    status.style.color = "red";
-  });
-}
+  method: "POST",
+  body: JSON.stringify([dados])
+})
+.then(() => {
+  barra.style.width = "100%";
+  barra.style.background = "green";
+  status.innerText = "✅ Enviado!";
+  status.style.color = "green";
+  salvarLocal(i, texto);
+})
+.catch(() => {
+  barra.style.background = "red";
+  status.innerText = "❌ Erro de conexão";
+});
   
 // salvar local
 function salvarLocal(i, texto) {
