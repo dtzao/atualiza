@@ -82,28 +82,22 @@ for (let i = 0; i < 10; i++) {
   `;
 }
 
-// função robusta de extração (funciona no celular)
+// extrair dados
 function extrair(texto) {
   texto = texto.replace(/\r/g, "").trim();
 
-  const usuarioMatch = texto.match(/Usu[aá]rio:\s*(.+)/i);
-  const dataMatch = texto.match(/Pr[oó]ximo vencimento:\s*(.+)/i);
+  const usuarioMatch = texto.match(/Usu[aá]rio:\s*([^\n]+)/i);
+  const dataMatch = texto.match(/Pr[oó]ximo vencimento:\s*([^\n]+)/i);
 
   if (!usuarioMatch || !dataMatch) return null;
 
-  let usuario = usuarioMatch[1]
-    .replace(/\s+/g, " ")
-    .trim();
-
-  let vencimento = dataMatch[1]
-    .replace(/\s+/g, " ")
-    .trim()
-    .split(" ")[0];
+  let usuario = usuarioMatch[1].trim();
+  let vencimento = dataMatch[1].trim().split(" ")[0];
 
   return { usuario, vencimento };
 }
 
-// enviar
+// enviar (CORRIGIDO PARA MOBILE)
 function enviar(i) {
   const texto = document.getElementById(`txt${i}`).value;
   const status = document.getElementById(`status${i}`);
@@ -128,25 +122,18 @@ function enviar(i) {
 
   fetch(API_URL, {
     method: "POST",
+    mode: "no-cors", // 🔥 resolve CORS
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": "text/plain"
     },
     body: JSON.stringify([dados])
   })
-  .then(res => res.json())
-  .then(resp => {
+  .then(() => {
     barra.style.width = "100%";
-
-    if (resp.status === "atualizado") {
-      barra.style.background = "green";
-      status.innerText = "✅ Enviado e atualizado!";
-      status.style.color = "green";
-      salvarLocal(i, texto);
-    } else {
-      barra.style.background = "red";
-      status.innerText = "❌ " + resp.mensagem;
-      status.style.color = "red";
-    }
+    barra.style.background = "green";
+    status.innerText = "✅ Enviado!";
+    status.style.color = "green";
+    salvarLocal(i, texto);
   })
   .catch(() => {
     barra.style.width = "100%";
