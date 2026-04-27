@@ -58,7 +58,7 @@ button {
 <div id="container"></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbxk_yvixwAlHDfwuWdTPaOurm5x7_VqbSv5K-3_yOh_l7tmGlNx2rMoTp_HR33ZyMtD/exec";
+const API_URL = "COLE_SUA_URL_AQUI";
 
 const container = document.getElementById("container");
 
@@ -82,12 +82,10 @@ for (let i = 0; i < 10; i++) {
   `;
 }
 
-// extrair dados
+// extrair dados automaticamente
 function extrair(texto) {
-  texto = texto.replace(/\r/g, "").trim();
-
-  const usuarioMatch = texto.match(/Usu[aá]rio:\s*([^\n]+)/i);
-  const dataMatch = texto.match(/Pr[oó]ximo vencimento:\s*([^\n]+)/i);
+  const usuarioMatch = texto.match(/Usuário:\s*(.*)/i);
+  const dataMatch = texto.match(/Próximo vencimento:\s*(.*)/i);
 
   if (!usuarioMatch || !dataMatch) return null;
 
@@ -97,7 +95,7 @@ function extrair(texto) {
   return { usuario, vencimento };
 }
 
-// enviar (CORRIGIDO PARA MOBILE)
+// enviar individual
 function enviar(i) {
   const texto = document.getElementById(`txt${i}`).value;
   const status = document.getElementById(`status${i}`);
@@ -118,39 +116,44 @@ function enviar(i) {
 
   barra.style.width = "40%";
   barra.style.background = "orange";
-  status.innerText = "⏳ Enviando...";
-
-  const formData = new FormData();
-  formData.append("usuario", dados.usuario);
-  formData.append("vencimento", dados.vencimento);
+  status.innerText = "Enviando...";
 
   fetch(API_URL, {
-  method: "POST",
-  body: JSON.stringify([dados])
-})
-.then(() => {
-  barra.style.width = "100%";
-  barra.style.background = "green";
-  status.innerText = "✅ Enviado!";
-  status.style.color = "green";
-  salvarLocal(i, texto);
-})
-.catch(() => {
-  barra.style.background = "red";
-  status.innerText = "❌ Erro de conexão";
-});
-  
+    method: "POST",
+    body: JSON.stringify([dados])
+  })
+  .then(res => res.json())
+  .then(resp => {
+    barra.style.width = "100%";
+
+    if (resp.status === "atualizado") {
+      barra.style.background = "green";
+      status.innerText = "✅ Enviado e atualizado!";
+      status.style.color = "green";
+      salvarLocal(i, texto);
+    } else {
+      barra.style.background = "red";
+      status.innerText = "❌ " + resp.mensagem;
+      status.style.color = "red";
+    }
+  })
+  .catch(() => {
+    barra.style.background = "red";
+    status.innerText = "❌ Erro de conexão";
+    status.style.color = "red";
+  });
+}
+
 // salvar local
 function salvarLocal(i, texto) {
   localStorage.setItem("box" + i, texto);
 }
 
-// limpar
+// limpar individual
 function limpar(i) {
   localStorage.removeItem("box" + i);
   document.getElementById(`txt${i}`).value = "";
   document.getElementById(`bar${i}`).style.width = "0%";
-  document.getElementById(`bar${i}`).style.background = "gray";
   document.getElementById(`status${i}`).innerText = "";
 }
 
