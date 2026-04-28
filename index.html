@@ -108,17 +108,21 @@ function enviar(i) {
     return;
   }
 
-  const dados = extrair(texto);
+const dados = extrair(texto);
 
-  if (!dados) {
-    status.innerText = "❌ Formato inválido";
-    status.style.color = "red";
-    return;
-  }
+if (!dados) {
+  status.innerText = "❌ Formato inválido";
+  status.style.color = "red";
+  return;
+}
 
-  barra.style.width = "40%";
-  barra.style.background = "orange";
-  status.innerText = "Enviando...";
+// 👇 ADICIONE AQUI
+console.log(dados.usuario);
+alert("Usuário enviado: " + dados.usuario);
+
+barra.style.width = "40%";
+barra.style.background = "orange";
+status.innerText = "Enviando...";
 
  fetch(API_URL, {
   method: "POST",
@@ -144,8 +148,7 @@ function enviar(i) {
     barra.style.background = "red";
     status.innerText = "❌ Erro de conexão";
     status.style.color = "red";
-  });
-}
+    }
 
 // salvar local
 function salvarLocal(i, texto) {
