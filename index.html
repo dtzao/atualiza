@@ -91,7 +91,10 @@ function extrair(texto) {
 
   if (!usuarioMatch || !dataMatch) return null;
 
-  let usuario = usuarioMatch[1].trim();
+  let usuario = usuarioMatch[1]
+    .replace(/[*_~`]/g, "") // 🔥 remove formatação do WhatsApp
+    .trim();
+
   let vencimento = dataMatch[1].trim().split(" ")[0];
 
   return { usuario, vencimento };
