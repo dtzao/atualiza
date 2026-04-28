@@ -84,8 +84,10 @@ for (let i = 0; i < 10; i++) {
 
 // extrair dados automaticamente
 function extrair(texto) {
-  const usuarioMatch = texto.match(/Usuário:\s*(.*)/i);
-  const dataMatch = texto.match(/Próximo vencimento:\s*(.*)/i);
+  texto = texto.replace(/\r/g, "");
+
+  const usuarioMatch = texto.match(/Usu[áa]rio:\s*(.+)/i);
+  const dataMatch = texto.match(/Pr[oó]ximo vencimento:\s*(.+)/i);
 
   if (!usuarioMatch || !dataMatch) return null;
 
@@ -94,7 +96,7 @@ function extrair(texto) {
 
   return { usuario, vencimento };
 }
-
+  
 // enviar individual
 function enviar(i) {
   const texto = document.getElementById(`txt${i}`).value;
