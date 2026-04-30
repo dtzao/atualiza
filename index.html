@@ -92,15 +92,13 @@ function extrair(texto) {
   if (!usuarioMatch || !dataMatch) return null;
 
   let usuario = usuarioMatch[1]
-    .replace(/[*_~`]/g, "") // 🔥 remove formatação do WhatsApp
+    .replace(/[*_~`]/g, "")
     .trim();
-  
-  let vencimento = dataMatch[1]
-  .replace(/[*_~`]/g, "") // 🔥 remove formatação
-  .trim()
-  .split(" ")[0];
 
-  let vencimento = dataMatch[1].trim().split(" ")[0];
+  let vencimento = dataMatch[1]
+    .replace(/[*_~`]/g, "") // 🔥 correção
+    .trim()
+    .split(" ")[0];
 
   return { usuario, vencimento };
 }
@@ -124,7 +122,6 @@ function enviar(i) {
     return;
   }
 
-  // DEBUG (pode remover depois)
   console.log(dados.usuario);
   alert("Usuário enviado: " + dados.usuario);
 
@@ -173,7 +170,7 @@ function limpar(i) {
 
 // carregar salvos
 window.onload = () => {
-  for (let i = 0; i < 25; i++) {
+  for (let i = 0; i < 25; i++) { // 🔥 correção
     let salvo = localStorage.getItem("box" + i);
     if (salvo) {
       document.getElementById(`txt${i}`).value = salvo;
