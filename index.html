@@ -94,6 +94,11 @@ function extrair(texto) {
   let usuario = usuarioMatch[1]
     .replace(/[*_~`]/g, "") // 🔥 remove formatação do WhatsApp
     .trim();
+  
+  let vencimento = dataMatch[1]
+  .replace(/[*_~`]/g, "") // 🔥 remove formatação
+  .trim()
+  .split(" ")[0];
 
   let vencimento = dataMatch[1].trim().split(" ")[0];
 
@@ -168,7 +173,7 @@ function limpar(i) {
 
 // carregar salvos
 window.onload = () => {
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 25; i++) {
     let salvo = localStorage.getItem("box" + i);
     if (salvo) {
       document.getElementById(`txt${i}`).value = salvo;
