@@ -3,181 +3,289 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Painel de Renovações</title>
-
 <style>
-body {
-  font-family: Arial;
-  background: #f0f0f0;
-  padding: 10px;
-}
-
-.box {
-  background: white;
-  padding: 10px;
-  margin-bottom: 15px;
-  border-radius: 10px;
-}
-
-textarea {
-  width: 100%;
-  height: 120px;
-  padding: 8px;
-}
-
-button {
-  width: 48%;
-  padding: 10px;
-  margin-top: 5px;
-}
-
-.status {
-  margin-top: 5px;
-  font-size: 14px;
-}
-
-.progress {
-  height: 6px;
-  background: #ddd;
-  margin-top: 5px;
-}
-
-.bar {
-  height: 6px;
-  width: 0%;
-  background: gray;
-}
+    :root {
+        --primary: #4f46e5;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+    }
+    
+    body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+        margin: 0;
+        padding: 15px;
+        color: #333;
+    }
+    
+    h3 {
+        text-align: center;
+        color: var(--primary);
+        margin-bottom: 20px;
+    }
+    
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .box {
+        background: white;
+        padding: 16px;
+        margin-bottom: 16px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        transition: all 0.2s;
+    }
+    
+    .box:hover {
+        box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    }
+    
+    textarea {
+        width: 100%;
+        height: 110px;
+        padding: 12px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-family: monospace;
+        font-size: 14px;
+        resize: vertical;
+    }
+    
+    .actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 12px;
+    }
+    
+    button {
+        padding: 10px 16px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+    
+    .btn-primary {
+        background: var(--primary);
+        color: white;
+        flex: 1;
+    }
+    
+    .btn-secondary {
+        background: #6b7280;
+        color: white;
+    }
+    
+    .progress {
+        height: 8px;
+        background: #e5e7eb;
+        border-radius: 9999px;
+        margin: 12px 0;
+        overflow: hidden;
+    }
+    
+    .bar {
+        height: 100%;
+        width: 0%;
+        transition: width 0.4s ease;
+        border-radius: 9999px;
+    }
+    
+    .status {
+        font-size: 14px;
+        min-height: 20px;
+        font-weight: 500;
+    }
+    
+    .success { color: var(--success); }
+    .error { color: var(--danger); }
+    .warning { color: var(--warning); }
 </style>
 </head>
-
 <body>
+    <h3>🚀 Painel de Renovações</h3>
+    
+    <div class="header">
+        <button onclick="enviarTodos()" class="btn-primary">📤 Enviar Todos</button>
+        <button onclick="limparTodos()" class="btn-secondary">🗑️ Limpar Todos</button>
+    </div>
 
-<h3>Painel de Atualização</h3>
-
-<div id="container"></div>
+    <div id="container"></div>
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbxk_yvixwAlHDfwuWdTPaOurm5x7_VqbSv5K-3_yOh_l7tmGlNx2rMoTp_HR33ZyMtD/exec";
-
 const container = document.getElementById("container");
 
-// cria 25 caixas
+// Criar 25 caixas
 for (let i = 0; i < 25; i++) {
-  container.innerHTML += `
-    <div class="box">
-      <textarea id="txt${i}" placeholder="Cole o texto aqui..."></textarea>
-
-      <div style="display:flex; justify-content:space-between;">
-        <button onclick="enviar(${i})">Enviar</button>
-        <button onclick="limpar(${i})">Limpar</button>
-      </div>
-
-      <div class="progress">
-        <div class="bar" id="bar${i}"></div>
-      </div>
-
-      <div class="status" id="status${i}"></div>
-    </div>
-  `;
+    container.innerHTML += `
+        <div class="box" id="box${i}">
+            <textarea id="txt${i}" placeholder="Cole o texto ou a linha da planilha aqui..."></textarea>
+            <div class="actions">
+                <button onclick="enviar(${i})" class="btn-primary">Enviar</button>
+                <button onclick="limpar(${i})" class="btn-secondary">Limpar</button>
+            </div>
+            <div class="progress">
+                <div class="bar" id="bar${i}"></div>
+            </div>
+            <div class="status" id="status${i}"></div>
+        </div>
+    `;
 }
 
-// extrair dados automaticamente
+// === PARSER ATUALIZADO ===
 function extrair(texto) {
-  texto = texto.replace(/\r/g, "");
+    if (!texto || typeof texto !== "string") return null;
+    
+    texto = texto.replace(/\r/g, "").trim();
+    
+    let usuario = null;
+    let vencimento = null;
 
-  const usuarioMatch = texto.match(/Usu[áa]rio:\s*(.+)/i);
-  const dataMatch = texto.match(/Pr[oó]ximo vencimento:\s*(.+)/i);
+    // Padrão 1: Texto normal com "Usuário:"
+    const usuarioMatch = texto.match(/Usu[áa]rio:?\s*([^\n]+)/i);
+    if (usuarioMatch) usuario = usuarioMatch[1].trim();
 
-  if (!usuarioMatch || !dataMatch) return null;
+    const dataMatch = texto.match(/Pr[oó]ximo\s*vencimento:?\s*([^\n]+)/i);
+    if (dataMatch) vencimento = dataMatch[1].trim();
 
-  let usuario = usuarioMatch[1]
-    .replace(/[*_~`]/g, "")
-    .trim();
-
-  let vencimento = dataMatch[1]
-    .replace(/[*_~`]/g, "") // 🔥 correção
-    .trim()
-    .split(" ")[0];
-
-  return { usuario, vencimento };
-}
-
-// enviar individual
-function enviar(i) {
-  const texto = document.getElementById(`txt${i}`).value;
-  const status = document.getElementById(`status${i}`);
-  const barra = document.getElementById(`bar${i}`);
-
-  if (!texto) {
-    alert("Cole o texto");
-    return;
-  }
-
-  const dados = extrair(texto);
-
-  if (!dados) {
-    status.innerText = "❌ Formato inválido";
-    status.style.color = "red";
-    return;
-  }
-
-  console.log(dados.usuario);
-  alert("Usuário enviado: " + dados.usuario);
-
-  barra.style.width = "40%";
-  barra.style.background = "orange";
-  status.innerText = "Enviando...";
-
-  fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify([dados])
-  })
-  .then(res => res.json())
-  .then(resp => {
-    barra.style.width = "100%";
-
-    if (resp.status === "atualizado") {
-      barra.style.background = "green";
-      status.innerText = "✅ Enviado e atualizado!";
-      status.style.color = "green";
-      salvarLocal(i, texto);
-    } else {
-      barra.style.background = "red";
-      status.innerText = "❌ " + resp.mensagem;
-      status.style.color = "red";
+    // Padrão 2: Linha da planilha (USUÁRIO agora na coluna H)
+    if (!usuario) {
+        const linhas = texto.split(/\n/);
+        for (let linha of linhas) {
+            const colunas = linha.trim().split(/\t+|\s{2,}/);
+            
+            // Procura por usuário (geralmente começa com "- ")
+            for (let celula of colunas) {
+                const c = celula.trim();
+                if (c.startsWith('- ') || /^-\w/.test(c)) {
+                    usuario = c.replace(/^\s*-\s*/, '').trim();
+                    break;
+                }
+            }
+            
+            // Procura por data (formato dd/mm/aaaa)
+            if (!vencimento) {
+                const dataEncontrada = linha.match(/\b(\d{2}\/\d{2}\/\d{4})\b/);
+                if (dataEncontrada) vencimento = dataEncontrada[1];
+            }
+        }
     }
-  })
-  .catch(() => {
-    barra.style.background = "red";
-    status.innerText = "❌ Erro de conexão";
-    status.style.color = "red";
-  });
+
+    // Limpeza final
+    if (usuario) {
+        usuario = usuario.replace(/[*_~`]/g, "").trim();
+    }
+    if (vencimento) {
+        vencimento = vencimento.replace(/[*_~`]/g, "")
+                               .trim()
+                               .split(/[\/\s]/)[0];
+    }
+
+    if (!usuario || !vencimento) return null;
+
+    return { usuario, vencimento };
 }
 
-// salvar local
-function salvarLocal(i, texto) {
-  localStorage.setItem("box" + i, texto);
+// Enviar individual
+async function enviar(i) {
+    const texto = document.getElementById(`txt${i}`).value.trim();
+    const statusEl = document.getElementById(`status${i}`);
+    const bar = document.getElementById(`bar${i}`);
+
+    if (!texto) {
+        statusEl.innerHTML = "❌ Cole o texto primeiro";
+        statusEl.className = "status error";
+        return;
+    }
+
+    const dados = extrair(texto);
+    if (!dados) {
+        statusEl.innerHTML = "❌ Não consegui identificar Usuário e Vencimento.<br>Verifique o formato.";
+        statusEl.className = "status error";
+        return;
+    }
+
+    bar.style.width = "30%";
+    bar.style.background = "#f59e0b";
+    statusEl.innerHTML = "⏳ Enviando...";
+    statusEl.className = "status warning";
+
+    try {
+        const response = await fetch(API_URL, {
+            method: "POST",
+            body: JSON.stringify([dados])
+        });
+        
+        const resp = await response.json();
+
+        bar.style.width = "100%";
+        
+        if (resp.status === "atualizado") {
+            bar.style.background = "#10b981";
+            statusEl.innerHTML = `✅ <strong>${dados.usuario}</strong> atualizado!`;
+            statusEl.className = "status success";
+            salvarLocal(i, texto);
+        } else {
+            bar.style.background = "#ef4444";
+            statusEl.innerHTML = `❌ ${resp.mensagem || "Erro desconhecido"}`;
+            statusEl.className = "status error";
+        }
+    } catch (e) {
+        bar.style.background = "#ef4444";
+        statusEl.innerHTML = "❌ Erro de conexão";
+        statusEl.className = "status error";
+    }
 }
 
-// limpar individual
+// Enviar todos
+async function enviarTodos() {
+    if (!confirm("Enviar todas as caixas preenchidas?")) return;
+    
+    for (let i = 0; i < 25; i++) {
+        const texto = document.getElementById(`txt${i}`).value.trim();
+        if (texto) {
+            await enviar(i);
+            await new Promise(r => setTimeout(r, 800));
+        }
+    }
+}
+
 function limpar(i) {
-  localStorage.removeItem("box" + i);
-  document.getElementById(`txt${i}`).value = "";
-  document.getElementById(`bar${i}`).style.width = "0%";
-  document.getElementById(`status${i}`).innerText = "";
+    localStorage.removeItem("box" + i);
+    document.getElementById(`txt${i}`).value = "";
+    document.getElementById(`bar${i}`).style.width = "0%";
+    document.getElementById(`status${i}`).innerHTML = "";
 }
 
-// carregar salvos
-window.onload = () => {
-  for (let i = 0; i < 25; i++) { // 🔥 correção
-    let salvo = localStorage.getItem("box" + i);
-    if (salvo) {
-      document.getElementById(`txt${i}`).value = salvo;
+function limparTodos() {
+    if (confirm("Limpar TODAS as caixas?")) {
+        for (let i = 0; i < 25; i++) limpar(i);
     }
-  }
 }
-</script>
 
+function salvarLocal(i, texto) {
+    localStorage.setItem("box" + i, texto);
+}
+
+// Carregar salvos
+window.onload = () => {
+    for (let i = 0; i < 25; i++) {
+        const salvo = localStorage.getItem("box" + i);
+        if (salvo) {
+            document.getElementById(`txt${i}`).value = salvo;
+        }
+    }
+};
+</script>
 </body>
 </html>
