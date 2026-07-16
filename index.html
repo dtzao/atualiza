@@ -23,7 +23,7 @@
     }
     textarea {
         width: 100%;
-        height: 105px;
+        height: 130px;
         padding: 12px;
         border: 2px solid #ddd;
         border-radius: 8px;
@@ -64,7 +64,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbxk_yvixwAlHDfwuWdTPaOu
 for (let i = 0; i < 25; i++) {
     document.getElementById("container").innerHTML += `
         <div class="box">
-            <textarea id="txt${i}" placeholder="Cole a linha completa da planilha aqui..."></textarea>
+            <textarea id="txt${i}" placeholder="Cole o texto da renovação aqui..."></textarea>
             <div style="display:flex; gap:8px; margin-top:10px;">
                 <button onclick="enviar(${i})" class="btn-primary">Enviar</button>
                 <button onclick="limpar(${i})" class="btn-secondary">Limpar</button>
@@ -74,76 +74,43 @@ for (let i = 0; i < 25; i++) {
         </div>`;
 }
 
-// === PARSER MELHORADO ===
 function extrair(texto) {
     if (!texto) return null;
-    texto = texto.trim();
 
-    // Separar colunas (tabs ou múltiplos espaços)
-    const colunas = texto.split(/\t+|\s{2,}/).map(c => c.trim()).filter(c => c);
+    // Extrai Usuário
+    const usuarioMatch = texto.match(/Usu[áa]rio:?\s*([^\n*]+)/i);
+    let usuario = usuarioMatch ? usuarioMatch[1].trim() : null;
 
-    let usuario = null;
-    let vencimento = null;
-
-    // Procurar usuário (geralmente começa com - ou é nome de usuário)
-    for (let cel of colunas) {
-        if (cel.startsWith('-')) {
-            usuario = cel.replace(/^\s*-\s*/, '').trim();
-            break;
-        }
-        if (/^[a-zA-Z0-9._-]+$/.test(cel) && cel.length > 3) {
-            usuario = cel;
-        }
-    }
-
-    // Procurar data completa (dd/mm/yyyy ou dd/mm/yy)
-    const dateRegex = /\b(\d{1,2}\/\d{1,2}\/\d{2,4})\b/g;
-    let match;
-    while ((match = dateRegex.exec(texto)) !== null) {
-        vencimento = match[1];
-        // Pega a última data encontrada (normalmente a do vencimento)
-    }
-
-    // Se não achou data completa, tenta montar (caso tenha só o dia)
-    if (!vencimento && colunas.length > 0) {
-        const ultimaCel = colunas[colunas.length - 1];
-        if (/^\d{1,2}$/.test(ultimaCel)) {
-            // Aqui você pode ajustar o mês/ano manualmente se quiser, mas por enquanto deixamos como está
-            vencimento = ultimaCel; 
-        }
-    }
+    // Extrai Data
+    const dataMatch = texto.match(/Pr[oó]ximo\s*vencimento:?\s*(\d{2}\/\d{2}\/\d{4})/i);
+    let vencimento = dataMatch ? dataMatch[1] : null;
 
     if (!usuario || !vencimento) return null;
 
-    return { 
-        usuario: usuario.replace(/[*_~`]/g, "").trim(),
-        vencimento: vencimento 
-    };
+    return { usuario, vencimento };
 }
 
-// Enviar
 async function enviar(i) {
     const texto = document.getElementById(`txt${i}`).value.trim();
     const status = document.getElementById(`status${i}`);
     const bar = document.getElementById(`bar${i}`);
 
     if (!texto) {
-        status.innerHTML = "❌ Cole o texto da planilha";
+        status.innerHTML = "❌ Cole o texto da renovação";
         status.className = "status error";
         return;
     }
 
     const dados = extrair(texto);
     if (!dados) {
-        status.innerHTML = "❌ Não conseguiu ler usuário ou data.<br>Tente colar a linha completa.";
+        status.innerHTML = "❌ Formato inválido.<br>Precisa ter 'Usuário:' e 'Próximo vencimento:'";
         status.className = "status error";
         return;
     }
 
     bar.style.width = "50%";
     bar.style.background = "#f59e0b";
-    status.innerHTML = `Enviando ${dados.usuario}...`;
-    status.className = "";
+    status.innerHTML = `Processando ${dados.usuario}...`;
 
     try {
         const res = await fetch(API_URL, {
@@ -158,14 +125,14 @@ async function enviar(i) {
         status.className = "status success";
         
         localStorage.setItem("box" + i, texto);
-    } catch (err) {
+    } catch (e) {
         bar.style.background = "#ef4444";
         status.innerHTML = "❌ Erro de conexão";
         status.className = "status error";
     }
 }
 
-// Funções de limpar e enviar todos (mesmas)
+// Funções auxiliares
 function limpar(i) {
     localStorage.removeItem("box" + i);
     document.getElementById(`txt${i}`).value = "";
@@ -180,12 +147,9 @@ function limparTodos() {
 }
 
 async function enviarTodos() {
-    if (!confirm("Enviar todas as caixas?")) return;
+    if (!confirm("Enviar todas as caixas com conteúdo?")) return;
     for (let i = 0; i < 25; i++) {
-        if (document.getElementById(`txt${i}`).value.trim()) {
-            await enviar(i);
-            await new Promise(r => setTimeout(r, 600));
-        }
+        if (document.getElementById(`txt${i}`).value.trim()) await enviar(i);
     }
 }
 
