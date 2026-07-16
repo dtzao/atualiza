@@ -11,7 +11,7 @@
         background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
         margin: 0; padding: 15px;
     }
-    h3 { text-align: center; color: var(--primary); margin: 10px 0 20px; }
+    h3 { text-align: center; color: var(--primary); margin: 15px 0 25px; }
     
     .header { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
     .box {
@@ -19,11 +19,11 @@
         padding: 16px;
         margin-bottom: 16px;
         border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
     textarea {
         width: 100%;
-        height: 140px;
+        height: 135px;
         padding: 12px;
         border: 2px solid #ddd;
         border-radius: 8px;
@@ -31,7 +31,7 @@
         font-size: 14px;
     }
     button {
-        padding: 11px 18px;
+        padding: 12px 20px;
         border: none;
         border-radius: 8px;
         cursor: pointer;
@@ -40,10 +40,10 @@
     .btn-primary { background: var(--primary); color: white; flex: 1; }
     .btn-secondary { background: #666; color: white; }
     
-    .progress { height: 8px; background: #eee; border-radius: 10px; margin: 10px 0; overflow: hidden; }
-    .bar { height: 100%; width: 0%; background: #f59e0b; transition: all 0.4s; }
+    .progress { height: 8px; background: #eee; border-radius: 10px; margin: 12px 0; overflow: hidden; }
+    .bar { height: 100%; width: 0%; background: #f59e0b; transition: width 0.4s ease; }
     
-    .status { margin-top: 6px; font-weight: 500; min-height: 22px; }
+    .status { margin-top: 8px; font-weight: 500; min-height: 24px; }
     .success { color: var(--success); }
     .error { color: var(--danger); }
 </style>
@@ -64,8 +64,8 @@ const API_URL = "https://script.google.com/macros/s/AKfycbxk_yvixwAlHDfwuWdTPaOu
 for (let i = 0; i < 25; i++) {
     document.getElementById("container").innerHTML += `
         <div class="box">
-            <textarea id="txt${i}" placeholder="Cole o texto da renovação aqui..."></textarea>
-            <div style="display:flex; gap:8px; margin-top:10px;">
+            <textarea id="txt${i}" placeholder="Cole o texto completo da renovação aqui..."></textarea>
+            <div style="display:flex; gap:10px; margin-top:12px;">
                 <button onclick="enviar(${i})" class="btn-primary">Enviar</button>
                 <button onclick="limpar(${i})" class="btn-secondary">Limpar</button>
             </div>
@@ -74,69 +74,62 @@ for (let i = 0; i < 25; i++) {
         </div>`;
 }
 
-// PARSER MELHORADO
 function extrair(texto) {
-    if (!texto) return null;
-    texto = texto.replace(/[*_~`]/g, ""); // Remove asteriscos e formatação
+    texto = texto.replace(/[*_~`]/g, "").trim();
+    
+    const usuarioMatch = texto.match(/Usu[áa]rio:?\s*([^\n]+)/i);
+    const dataMatch = texto.match(/(\d{2}\/\d{2}\/\d{4})/);
 
-    // Usuário
-    let usuarioMatch = texto.match(/Usu[áa]rio:?\s*([^\n]+)/i);
-    let usuario = usuarioMatch ? usuarioMatch[1].trim() : null;
+    if (!usuarioMatch || !dataMatch) return null;
 
-    // Data
-    let dataMatch = texto.match(/Pr[oó]ximo\s*vencimento:?\s*(\d{2}\/\d{2}\/\d{4})/i);
-    let vencimento = dataMatch ? dataMatch[1] : null;
-
-    if (!usuario || !vencimento) return null;
-
-    return { 
-        usuario: usuario.trim(), 
-        vencimento: vencimento 
+    return {
+        usuario: usuarioMatch[1].trim(),
+        vencimento: dataMatch[1]
     };
 }
 
 async function enviar(i) {
     const texto = document.getElementById(`txt${i}`).value.trim();
-    const status = document.getElementById(`status${i}`);
+    const statusEl = document.getElementById(`status${i}`);
     const bar = document.getElementById(`bar${i}`);
 
     if (!texto) {
-        status.innerHTML = "❌ Cole o texto";
-        status.className = "status error";
+        statusEl.innerHTML = "❌ Cole o texto";
+        statusEl.className = "status error";
         return;
     }
 
     const dados = extrair(texto);
     if (!dados) {
-        status.innerHTML = "❌ Formato não reconhecido.<br>Verifique se tem 'Usuário:' e 'Próximo vencimento:'";
-        status.className = "status error";
+        statusEl.innerHTML = "❌ Não encontrou Usuário ou Data";
+        statusEl.className = "status error";
         return;
     }
 
-    bar.style.width = "50%";
+    bar.style.width = "40%";
     bar.style.background = "#f59e0b";
-    status.innerHTML = `Enviando ${dados.usuario}...`;
+    statusEl.innerHTML = `Enviando ${dados.usuario}...`;
 
     try {
         const res = await fetch(API_URL, {
             method: "POST",
             body: JSON.stringify(dados)
         });
+        const resp = await res.json();
 
         bar.style.width = "100%";
         bar.style.background = "#10b981";
-        status.innerHTML = `✅ ${dados.usuario} → ${dados.vencimento}`;
-        status.className = "status success";
-        
+        statusEl.innerHTML = `✅ ${dados.usuario} → ${dados.vencimento}`;
+        statusEl.className = "status success";
+
         localStorage.setItem("box" + i, texto);
     } catch (e) {
         bar.style.background = "#ef4444";
-        status.innerHTML = "❌ Erro de conexão";
-        status.className = "status error";
+        statusEl.innerHTML = "❌ Erro de conexão";
+        statusEl.className = "status error";
     }
 }
 
-// Funções auxiliares
 function limpar(i) {
     localStorage.removeItem("box" + i);
     document.getElementById(`txt${i}`).value = "";
@@ -151,9 +144,11 @@ function limparTodos() {
 }
 
 async function enviarTodos() {
-    if (!confirm("Enviar todas?")) return;
+    if (!confirm("Enviar todas as caixas?")) return;
     for (let i = 0; i < 25; i++) {
-        if (document.getElementById(`txt${i}`).value.trim()) await enviar(i);
+        if (document.getElementById(`txt${i}`).value.trim()) {
+            await enviar(i);
+        }
     }
 }
 
