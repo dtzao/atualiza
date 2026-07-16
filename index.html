@@ -23,7 +23,7 @@
     }
     textarea {
         width: 100%;
-        height: 130px;
+        height: 140px;
         padding: 12px;
         border: 2px solid #ddd;
         border-radius: 8px;
@@ -49,7 +49,7 @@
 </style>
 </head>
 <body>
-    <h3>🚀 Painel de Renovações - Controle 2026</h3>
+    <h3>🚀 Painel de Renovações</h3>
     
     <div class="header">
         <button onclick="enviarTodos()" class="btn-primary">📤 Enviar Todos</button>
@@ -74,20 +74,25 @@ for (let i = 0; i < 25; i++) {
         </div>`;
 }
 
+// PARSER MELHORADO
 function extrair(texto) {
     if (!texto) return null;
+    texto = texto.replace(/[*_~`]/g, ""); // Remove asteriscos e formatação
 
-    // Extrai Usuário
-    const usuarioMatch = texto.match(/Usu[áa]rio:?\s*([^\n*]+)/i);
+    // Usuário
+    let usuarioMatch = texto.match(/Usu[áa]rio:?\s*([^\n]+)/i);
     let usuario = usuarioMatch ? usuarioMatch[1].trim() : null;
 
-    // Extrai Data
-    const dataMatch = texto.match(/Pr[oó]ximo\s*vencimento:?\s*(\d{2}\/\d{2}\/\d{4})/i);
+    // Data
+    let dataMatch = texto.match(/Pr[oó]ximo\s*vencimento:?\s*(\d{2}\/\d{2}\/\d{4})/i);
     let vencimento = dataMatch ? dataMatch[1] : null;
 
     if (!usuario || !vencimento) return null;
 
-    return { usuario, vencimento };
+    return { 
+        usuario: usuario.trim(), 
+        vencimento: vencimento 
+    };
 }
 
 async function enviar(i) {
@@ -96,28 +101,27 @@ async function enviar(i) {
     const bar = document.getElementById(`bar${i}`);
 
     if (!texto) {
-        status.innerHTML = "❌ Cole o texto da renovação";
+        status.innerHTML = "❌ Cole o texto";
         status.className = "status error";
         return;
     }
 
     const dados = extrair(texto);
     if (!dados) {
-        status.innerHTML = "❌ Formato inválido.<br>Precisa ter 'Usuário:' e 'Próximo vencimento:'";
+        status.innerHTML = "❌ Formato não reconhecido.<br>Verifique se tem 'Usuário:' e 'Próximo vencimento:'";
         status.className = "status error";
         return;
     }
 
     bar.style.width = "50%";
     bar.style.background = "#f59e0b";
-    status.innerHTML = `Processando ${dados.usuario}...`;
+    status.innerHTML = `Enviando ${dados.usuario}...`;
 
     try {
         const res = await fetch(API_URL, {
             method: "POST",
             body: JSON.stringify(dados)
         });
-        const result = await res.json();
 
         bar.style.width = "100%";
         bar.style.background = "#10b981";
@@ -147,7 +151,7 @@ function limparTodos() {
 }
 
 async function enviarTodos() {
-    if (!confirm("Enviar todas as caixas com conteúdo?")) return;
+    if (!confirm("Enviar todas?")) return;
     for (let i = 0; i < 25; i++) {
         if (document.getElementById(`txt${i}`).value.trim()) await enviar(i);
     }
