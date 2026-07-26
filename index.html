@@ -12,7 +12,6 @@
         margin: 0; padding: 15px;
     }
     h3 { text-align: center; color: var(--primary); margin: 15px 0 25px; }
-   
     .header { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
     .box {
         background: white;
@@ -38,10 +37,8 @@
     }
     .btn-primary { background: var(--primary); color: white; flex: 1; }
     .btn-secondary { background: #666; color: white; }
-   
     .progress { height: 8px; background: #eee; border-radius: 10px; margin: 12px 0; overflow: hidden; }
     .bar { height: 100%; width: 0%; background: #f59e0b; transition: width 0.4s ease; }
-   
     .status { margin-top: 8px; font-weight: 500; min-height: 24px; }
     .success { color: var(--success); }
     .error { color: var(--danger); }
@@ -55,8 +52,10 @@
         <button onclick="limparTodos()" class="btn-secondary">🗑️ Limpar Todos</button>
     </div>
     <div id="container"></div>
+
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbwAwwCoGUJy2B4n0KU9dbcwdl3gUTVlhuGAJIEc-clqiIcL3V4E8KTvPc-CQ6O51tU1/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwMdUobAKcNTQlc68i8TfH5ojVRgxaxeaWZWvNJ6Q1vxIHMMb8QdE217y-AejQv74tU/exec";
+
 for (let i = 0; i < 25; i++) {
     document.getElementById("container").innerHTML += `
         <div class="box">
@@ -69,9 +68,9 @@ for (let i = 0; i < 25; i++) {
             <div class="status" id="status${i}"></div>
         </div>`;
 }
+
 function extrair(texto) {
     texto = texto.replace(/[*_~`]/g, "").trim();
-   
     const usuarioMatch = texto.match(/Usu[áa]rio:?\s*([^\n]+)/i);
     const dataMatch = texto.match(/(\d{2}\/\d{2}\/\d{4})/);
     if (!usuarioMatch || !dataMatch) return null;
@@ -80,24 +79,29 @@ function extrair(texto) {
         vencimento: dataMatch[1]
     };
 }
+
 async function enviar(i) {
     const texto = document.getElementById(`txt${i}`).value.trim();
     const statusEl = document.getElementById(`status${i}`);
     const bar = document.getElementById(`bar${i}`);
+
     if (!texto) {
         statusEl.innerHTML = "❌ Cole o texto primeiro";
         statusEl.className = "status error";
         return;
     }
+
     const dados = extrair(texto);
     if (!dados) {
         statusEl.innerHTML = "❌ Formato inválido<br>Precisa ter Usuário e data dd/mm/aaaa";
         statusEl.className = "status error";
         return;
     }
+
     bar.style.width = "40%";
     bar.style.background = "#f59e0b";
     statusEl.innerHTML = `Enviando ${dados.usuario}...`;
+
     try {
         const res = await fetch(API_URL, {
             method: "POST",
@@ -106,35 +110,55 @@ async function enviar(i) {
             },
             body: JSON.stringify(dados)
         });
-        const resp = await res.json();
+
+        const textoResposta = await res.text();
+        console.log("Resposta bruta:", textoResposta);
+
+        let resp;
+        try {
+            resp = JSON.parse(textoResposta);
+        } catch (err) {
+            throw new Error("Resposta inválida do servidor");
+        }
+
+        if (resp.status === "erro") {
+            throw new Error(resp.mensagem || "Erro no script");
+        }
+
         bar.style.width = "100%";
         bar.style.background = "#10b981";
-        statusEl.innerHTML = `✅ ${dados.usuario} → ${dados.vencimento}`;
+        statusEl.innerHTML = `✅ ${dados.usuario} → ${dados.vencimento} (${resp.acao || resp.mensagem || "ok"})`;
         statusEl.className = "status success";
+
         localStorage.setItem("box" + i, texto);
     } catch (e) {
+        console.error(e);
         bar.style.background = "#ef4444";
-        statusEl.innerHTML = "❌ Erro de conexão";
+        statusEl.innerHTML = "❌ " + e.message;
         statusEl.className = "status error";
     }
 }
+
 function limpar(i) {
     localStorage.removeItem("box" + i);
     document.getElementById(`txt${i}`).value = "";
     document.getElementById(`bar${i}`).style.width = "0";
     document.getElementById(`status${i}`).innerHTML = "";
 }
+
 function limparTodos() {
     if (confirm("Limpar todas as caixas?")) {
         for (let i = 0; i < 25; i++) limpar(i);
     }
 }
+
 async function enviarTodos() {
     if (!confirm("Enviar todas as caixas?")) return;
     for (let i = 0; i < 25; i++) {
         if (document.getElementById(`txt${i}`).value.trim()) await enviar(i);
     }
 }
+
 window.onload = () => {
     for (let i = 0; i < 25; i++) {
         const salvo = localStorage.getItem("box" + i);
